@@ -2,84 +2,87 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>BIN Finder Pro - Ultra Fast</title>
+    <title>BIN Diagnostic Tool</title>
     <style>
-        :root { --accent: #00f2ff; --bg: #030712; }
-        body { 
-            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; margin: 0;
-        }
-        input {
-            background: #111827; border: 1px solid #1f2937; border-radius: 12px;
-            color: white; font-size: 1.6rem; padding: 12px; text-align: center;
-            width: 260px; outline: none; letter-spacing: 5px; margin-bottom: 30px;
-        }
-        .card {
-            width: 380px; height: 230px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
-            backdrop-filter: blur(15px); border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.1); padding: 30px;
-            box-sizing: border-box; opacity: 0; transition: 0.5s;
-        }
-        .card.active { opacity: 1; transform: scale(1); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
-        .chip { width: 45px; height: 35px; background: #eab308; border-radius: 6px; margin-bottom: 20px; }
-        .bank { position: absolute; top: 30px; right: 30px; font-weight: 700; color: #94a3b8; font-size: 0.8rem; }
-        .num { font-size: 1.5rem; letter-spacing: 3px; }
-        .footer { display: flex; margin-top: 30px; gap: 25px; font-size: 0.8rem; }
-        #status { margin-bottom: 10px; font-size: 0.8rem; color: var(--accent); }
+        body { background: #0a0c10; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .console { background: #111827; padding: 25px; border-radius: 15px; border: 1px solid #374151; width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        input { background: #000; border: 2px solid #4b5563; color: #00f2ff; font-size: 1.8rem; padding: 10px; width: 90%; text-align: center; border-radius: 8px; outline: none; margin-bottom: 20px; transition: 0.3s; }
+        input:focus { border-color: #6366f1; }
+        
+        /* Mensajes de Error Dinámicos */
+        .error-log { font-size: 0.85rem; padding: 12px; border-radius: 8px; display: none; margin-top: 15px; border-left: 4px solid; }
+        .err-critical { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: #ef4444; }
+        .err-warn { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: #f59e0b; }
+        
+        .success-card { background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; padding: 15px; border-radius: 10px; display: none; margin-top: 15px; }
+        .label { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; display: block; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <h2 style="font-weight: 200; color: #94a3b8;">Buscador Directo</h2>
-    <div id="status"></div>
-    <input type="number" id="binInput" placeholder="461046" oninput="buscar()">
+    <div class="console">
+        <h3 style="margin-top: 0; font-weight: 400; color: #94a3b8;">Monitor de Diagnóstico</h3>
+        <input type="number" id="binInput" placeholder="457101" oninput="diagnosticar()">
+        
+        <div id="status-text" style="font-size: 0.75rem; color: #6366f1;">Esperando 6 dígitos...</div>
 
-    <div class="card" id="card">
-        <div class="bank" id="b-name">BANCO</div>
-        <div class="chip"></div>
-        <div class="num" id="b-num">0000 00XX XXXX</div>
-        <div class="footer">
-            <div id="b-country">PAÍS: ---</div>
-            <div id="b-brand">MARCA: ---</div>
-            <div id="b-type">TIPO: ---</div>
+        <div id="errorBox" class="error-log"></div>
+
+        <div id="successBox" class="success-card">
+            <span class="label">Banco</span> <div id="r-bank"></div>
+            <span class="label">País / Marca</span> <div id="r-meta"></div>
         </div>
     </div>
 
 <script>
-    async function buscar() {
+    async function diagnosticar() {
         const bin = document.getElementById('binInput').value;
-        const card = document.getElementById('card');
-        const status = document.getElementById('status');
+        const errorBox = document.getElementById('errorBox');
+        const successBox = document.getElementById('successBox');
+        const statusText = document.getElementById('status-text');
+
+        // Resetear vista
+        errorBox.style.display = "none";
+        successBox.style.display = "none";
 
         if (bin.length === 6) {
-            status.innerText = "Buscando datos...";
+            statusText.innerText = "Iniciando peticion HTTP...";
             
             try {
-                // FUENTE DIRECTA: HandyAPI (No suele pedir proxy ni API Key)
                 const response = await fetch(`https://data.handyapi.com/bin/${bin}`);
-                const d = await response.json();
-
-                if (d.Status === "SUCCESS") {
-                    document.getElementById('b-name').innerText = (d.Bank || 'BANCO PRIVADO').toUpperCase();
-                    document.getElementById('b-country').innerText = "PAÍS: " + (d.Country?.Name || 'N/A');
-                    document.getElementById('b-brand').innerText = "MARCA: " + (d.Scheme || 'N/A').toUpperCase();
-                    document.getElementById('b-type').innerText = "TIPO: " + (d.Type || 'N/A').toUpperCase();
-                    document.getElementById('b-num').innerText = bin.slice(0,4) + " " + bin.slice(4,6) + "XX XXXX";
-                    
-                    status.innerText = "✓ Encontrado";
-                    card.classList.add('active');
-                } else {
-                    status.innerText = "BIN no encontrado en esta base.";
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: El servidor de la API rechazó la conexión.`);
                 }
-            } catch (e) {
-                status.innerText = "Error de conexión. Intenta otro BIN.";
-                console.error(e);
+
+                const data = await response.json();
+
+                if (data.Status === "SUCCESS") {
+                    document.getElementById('r-bank').innerText = data.Bank || "BANCO DESCONOCIDO";
+                    document.getElementById('r-meta').innerText = `${data.Country?.Name || 'N/A'} - ${data.Scheme || 'N/A'}`;
+                    successBox.style.display = "block";
+                    statusText.innerText = "✓ Conexión establecida y datos recibidos.";
+                } else {
+                    errorBox.className = "error-log err-warn";
+                    errorBox.innerText = "PROBLEMA: La API funciona, pero ese BIN no existe en su base de datos.";
+                    errorBox.style.display = "block";
+                }
+
+            } catch (err) {
+                errorBox.className = "error-log err-critical";
+                
+                // DETECCIÓN DE PROBLEMAS ESPECÍFICOS
+                if (err.message.includes('Failed to fetch')) {
+                    errorBox.innerText = "PROBLEMA: Error de CORS o Red. Tu navegador bloqueó la salida de datos a la API. (Prueba desactivando extensiones o usando modo incógnito).";
+                } else {
+                    errorBox.innerText = "PROBLEMA: " + err.message;
+                }
+                
+                errorBox.style.display = "block";
+                statusText.innerText = "✖ Fallo en la comunicación.";
             }
         } else {
-            card.classList.remove('active');
-            status.innerText = "";
+            statusText.innerText = `Faltan ${6 - bin.length} números...`;
         }
     }
 </script>

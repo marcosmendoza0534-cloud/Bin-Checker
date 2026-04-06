@@ -2,138 +2,85 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>BIN Explorer Infinity | GitHub Edition</title>
+    <title>BIN Finder Pro - Ultra Fast</title>
     <style>
-        :root { --accent: #6366f1; --bg: #030712; }
+        :root { --accent: #00f2ff; --bg: #030712; }
         body { 
             background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; margin: 0;
         }
-        .search-box { margin-bottom: 40px; text-align: center; }
         input {
             background: #111827; border: 1px solid #1f2937; border-radius: 12px;
             color: white; font-size: 1.6rem; padding: 12px; text-align: center;
-            width: 260px; outline: none; letter-spacing: 5px; transition: 0.3s;
+            width: 260px; outline: none; letter-spacing: 5px; margin-bottom: 30px;
         }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(99,102,241,0.2); }
-        
         .card {
-            width: 400px; height: 250px;
+            width: 380px; height: 230px;
             background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
-            backdrop-filter: blur(20px); border-radius: 24px;
+            backdrop-filter: blur(15px); border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.1); padding: 30px;
-            box-sizing: border-box; opacity: 0; transform: translateY(20px); transition: 0.5s;
+            box-sizing: border-box; opacity: 0; transition: 0.5s;
         }
-        .card.active { opacity: 1; transform: translateY(0); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
-        
-        .chip { width: 50px; height: 38px; background: linear-gradient(135deg, #fde047, #ca8a04); border-radius: 8px; margin-bottom: 25px; }
-        .bank { position: absolute; top: 35px; right: 35px; font-weight: 700; color: #94a3b8; font-size: 0.9rem; }
-        .num { font-size: 1.7rem; letter-spacing: 3px; font-weight: 200; }
-        .footer { display: flex; margin-top: 40px; gap: 30px; }
-        .label { font-size: 0.6rem; color: #64748b; text-transform: uppercase; display: block; }
-        .val { font-size: 0.85rem; font-weight: 600; }
-        #status { margin-top: 15px; font-size: 0.8rem; min-height: 20px; transition: 0.3s; }
+        .card.active { opacity: 1; transform: scale(1); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+        .chip { width: 45px; height: 35px; background: #eab308; border-radius: 6px; margin-bottom: 20px; }
+        .bank { position: absolute; top: 30px; right: 30px; font-weight: 700; color: #94a3b8; font-size: 0.8rem; }
+        .num { font-size: 1.5rem; letter-spacing: 3px; }
+        .footer { display: flex; margin-top: 30px; gap: 25px; font-size: 0.8rem; }
+        #status { margin-bottom: 10px; font-size: 0.8rem; color: var(--accent); }
     </style>
 </head>
 <body>
 
-<div class="search-box">
-    <h2 style="font-weight: 200; color: #94a3b8; margin-bottom: 20px;">Elite BIN Tracker</h2>
-    <input type="number" id="binInput" placeholder="461046" oninput="multiSourceLookup()">
+    <h2 style="font-weight: 200; color: #94a3b8;">Buscador Directo</h2>
     <div id="status"></div>
-</div>
+    <input type="number" id="binInput" placeholder="461046" oninput="buscar()">
 
-<div class="card" id="card">
-    <div class="bank" id="b-name">ANALIZANDO...</div>
-    <div class="chip"></div>
-    <div class="num" id="b-num">0000 00XX XXXX</div>
-    <div class="footer">
-        <div><span class="label">País</span><span class="val" id="b-country">---</span></div>
-        <div><span class="label">Marca</span><span class="val" id="b-brand">---</span></div>
-        <div><span class="label">Tipo</span><span class="val" id="b-type">---</span></div>
+    <div class="card" id="card">
+        <div class="bank" id="b-name">BANCO</div>
+        <div class="chip"></div>
+        <div class="num" id="b-num">0000 00XX XXXX</div>
+        <div class="footer">
+            <div id="b-country">PAÍS: ---</div>
+            <div id="b-brand">MARCA: ---</div>
+            <div id="b-type">TIPO: ---</div>
+        </div>
     </div>
-</div>
 
 <script>
-    const cache = {};
-
-    async function multiSourceLookup() {
+    async function buscar() {
         const bin = document.getElementById('binInput').value;
-        const status = document.getElementById('status');
         const card = document.getElementById('card');
+        const status = document.getElementById('status');
 
         if (bin.length === 6) {
-            if (cache[bin]) {
-                render(cache[bin], bin);
-                return;
-            }
-
-            status.style.color = "var(--accent)";
-            status.innerText = "Intentando Fuente 1 (Primaria)...";
-
-            // FUENTE 1: Binlist (Vía Proxy)
+            status.innerText = "Buscando datos...";
+            
             try {
-                const data = await fetchFromBinlist(bin);
-                cache[bin] = data;
-                render(data, bin);
-                status.innerText = "";
-            } catch (e) {
-                console.log("Fuente 1 falló, saltando a Fuente 2...");
-                status.innerText = "Fuente 1 saturada. Saltando a Fuente 2...";
-                
-                // FUENTE 2: HandyAPI (Fallback)
-                try {
-                    const data = await fetchFromHandy(bin);
-                    cache[bin] = data;
-                    render(data, bin);
-                    status.innerText = "";
-                } catch (e2) {
-                    status.style.color = "#f87171";
-                    status.innerText = "⚠️ Todas las redes gratuitas están saturadas. Reintenta en 5 min.";
-                    card.classList.remove('active');
+                // FUENTE DIRECTA: HandyAPI (No suele pedir proxy ni API Key)
+                const response = await fetch(`https://data.handyapi.com/bin/${bin}`);
+                const d = await response.json();
+
+                if (d.Status === "SUCCESS") {
+                    document.getElementById('b-name').innerText = (d.Bank || 'BANCO PRIVADO').toUpperCase();
+                    document.getElementById('b-country').innerText = "PAÍS: " + (d.Country?.Name || 'N/A');
+                    document.getElementById('b-brand').innerText = "MARCA: " + (d.Scheme || 'N/A').toUpperCase();
+                    document.getElementById('b-type').innerText = "TIPO: " + (d.Type || 'N/A').toUpperCase();
+                    document.getElementById('b-num').innerText = bin.slice(0,4) + " " + bin.slice(4,6) + "XX XXXX";
+                    
+                    status.innerText = "✓ Encontrado";
+                    card.classList.add('active');
+                } else {
+                    status.innerText = "BIN no encontrado en esta base.";
                 }
+            } catch (e) {
+                status.innerText = "Error de conexión. Intenta otro BIN.";
+                console.error(e);
             }
         } else {
             card.classList.remove('active');
             status.innerText = "";
         }
-    }
-
-    async function fetchFromBinlist(bin) {
-        const proxy = "https://api.allorigins.win/get?url=";
-        const target = `https://lookup.binlist.net/${bin}`;
-        const res = await fetch(proxy + encodeURIComponent(target));
-        const json = await res.json();
-        const d = JSON.parse(json.contents);
-        if (!d) throw new Error("403");
-        return {
-            bank: d.bank?.name || "BANCARIO",
-            country: d.country?.name || "N/A",
-            brand: d.scheme || "CARD",
-            type: d.type || "N/A"
-        };
-    }
-
-    async function fetchFromHandy(bin) {
-        const res = await fetch(`https://data.handyapi.com/bin/${bin}`);
-        const d = await res.json();
-        if (d.Status !== "SUCCESS") throw new Error("Limit");
-        return {
-            bank: d.Bank || "BANCARIO",
-            country: d.Country?.Name || "N/A",
-            brand: d.Scheme || "CARD",
-            type: d.Type || "N/A"
-        };
-    }
-
-    function render(d, bin) {
-        document.getElementById('b-name').innerText = d.bank.toUpperCase();
-        document.getElementById('b-country').innerText = d.country;
-        document.getElementById('b-brand').innerText = d.brand.toUpperCase();
-        document.getElementById('b-type').innerText = d.type.toUpperCase();
-        document.getElementById('b-num').innerText = bin.slice(0,4) + " " + bin.slice(4,6) + "XX XXXX";
-        document.getElementById('card').classList.add('active');
     }
 </script>
 

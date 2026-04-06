@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>BIN Explorer Live | GitHub Edition</title>
+    <style>
+        :root { --accent: #818cf8; --bg: #020617; }
+        body { 
+            background: var(--bg); color: white; font-family: 'Inter', system-ui, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; margin: 0;
+        }
+
+        /* Estética de Neobanco */
+        .search-container { margin-bottom: 40px; text-align: center; }
+        input {
+            background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+            color: white; font-size: 1.5rem; padding: 12px; text-align: center;
+            width: 260px; outline: none; letter-spacing: 5px; transition: 0.3s;
+        }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(129, 140, 248, 0.2); }
+
+        .card {
+            width: 400px; height: 250px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+            backdrop-filter: blur(20px); border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1); padding: 30px;
+            box-sizing: border-box; position: relative;
+            opacity: 0; transform: scale(0.95); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .card.visible { opacity: 1; transform: scale(1); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+
+        .chip { width: 48px; height: 35px; background: #eab308; border-radius: 6px; margin-bottom: 25px; }
+        .bank-name { position: absolute; top: 30px; right: 30px; font-weight: 700; color: #94a3b8; }
+        .num { font-size: 1.6rem; font-weight: 200; letter-spacing: 4px; margin-top: 10px; }
+        .footer { display: flex; margin-top: 35px; gap: 30px; }
+        .label { font-size: 0.6rem; color: #64748b; text-transform: uppercase; display: block; }
+        .val { font-size: 0.85rem; font-weight: 600; }
+        
+        #status { margin-top: 15px; font-size: 0.8rem; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="search-container">
+    <h2 style="font-weight: 200; color: #94a3b8;">Rastreador de BIN Live</h2>
+    <input type="number" id="binInput" placeholder="461046" oninput="check()">
+    <div id="status"></div>
+</div>
+
+<div class="card" id="card">
+    <div class="bank-name" id="b-name">BANCO</div>
+    <div class="chip"></div>
+    <div class="num" id="b-num">0000 00XX XXXX</div>
+    <div class="footer">
+        <div><span class="label">País</span><span class="val" id="b-country">---</span></div>
+        <div><span class="label">Marca</span><span class="val" id="b-brand">---</span></div>
+        <div><span class="label">Tipo</span><span class="val" id="b-type">---</span></div>
+    </div>
+</div>
+
+<script>
+    async function check() {
+        const bin = document.getElementById('binInput').value;
+        const card = document.getElementById('card');
+        const status = document.getElementById('status');
+
+        if (bin.length === 6) {
+            status.innerText = "Consultando red...";
+            
+            try {
+                // Al estar en GitHub, las APIs suelen ser menos estrictas con el CORS
+                // Usamos el proxy solo si es necesario
+                const url = `https://api.allorigins.win/get?url=${encodeURIComponent('https://lookup.binlist.net/' + bin)}`;
+                const response = await fetch(url);
+                const wrapper = await response.json();
+                const d = JSON.parse(wrapper.contents);
+
+                if (d) {
+                    document.getElementById('b-name').innerText = (d.bank?.name || 'DESCONOCIDO').toUpperCase();
+                    document.getElementById('b-country').innerText = d.country?.name || 'N/A';
+                    document.getElementById('b-brand').innerText = (d.scheme || 'N/A').toUpperCase();
+                    document.getElementById('b-type').innerText = (d.type || 'N/A').toUpperCase();
+                    document.getElementById('b-num').innerText = bin.slice(0,4) + " " + bin.slice(4,6) + "XX XXXX";
+                    
+                    status.innerText = "";
+                    card.classList.add('visible');
+                }
+            } catch (e) {
+                status.innerText = "Error: Límite de consultas excedido.";
+                card.classList.remove('visible');
+            }
+        } else {
+            card.classList.remove('visible');
+            status.innerText = "";
+        }
+    }
+</script>
+
+</body>
+</html>

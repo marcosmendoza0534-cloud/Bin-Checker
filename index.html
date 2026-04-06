@@ -2,90 +2,301 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>BIN Diagnostic Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIN Hunter Ultra-Edition</title>
     <style>
-        body { background: #0a0c10; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .console { background: #111827; padding: 25px; border-radius: 15px; border: 1px solid #374151; width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        input { background: #000; border: 2px solid #4b5563; color: #00f2ff; font-size: 1.8rem; padding: 10px; width: 90%; text-align: center; border-radius: 8px; outline: none; margin-bottom: 20px; transition: 0.3s; }
-        input:focus { border-color: #6366f1; }
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap');
+
+        :root {
+            --accent: #00f2ff;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: #02040a;
+            color: #ffffff;
+            font-family: 'Space Grotesk', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .main-wrapper {
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        /* --- INPUT DESIGN --- */
+        .search-section { margin-bottom: 50px; }
         
-        /* Mensajes de Error Dinámicos */
-        .error-log { font-size: 0.85rem; padding: 12px; border-radius: 8px; display: none; margin-top: 15px; border-left: 4px solid; }
-        .err-critical { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: #ef4444; }
-        .err-warn { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: #f59e0b; }
-        
-        .success-card { background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; padding: 15px; border-radius: 10px; display: none; margin-top: 15px; }
-        .label { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; display: block; margin-top: 5px; }
+        h1 { font-weight: 300; letter-spacing: 4px; color: #94a3b8; font-size: 1.2rem; margin-bottom: 25px; }
+
+        .input-group { position: relative; width: 300px; margin: 0 auto; }
+
+        input {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 20px;
+            color: var(--accent);
+            font-size: 2rem;
+            padding: 15px;
+            width: 100%;
+            text-align: center;
+            outline: none;
+            letter-spacing: 8px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        #status-bar {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            height: 20px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* --- CARD DESIGN (NEOBANK) --- */
+        .card-container {
+            perspective: 1000px;
+            margin-top: 20px;
+        }
+
+        .credit-card {
+            width: 100%;
+            height: 260px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01));
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 28px;
+            border: 1px solid var(--border);
+            position: relative;
+            padding: 35px;
+            box-sizing: border-box;
+            text-align: left;
+            opacity: 0;
+            transform: rotateX(10deg) translateY(40px);
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+        }
+
+        .credit-card.show {
+            opacity: 1;
+            transform: rotateX(0deg) translateY(0);
+        }
+
+        .chip {
+            width: 55px;
+            height: 42px;
+            background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 35px;
+        }
+
+        .chip::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(0,0,0,0.1) 11px);
+        }
+
+        .bank-info {
+            position: absolute;
+            top: 35px;
+            right: 35px;
+            text-align: right;
+        }
+
+        #display-bank {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #display-country {
+            font-size: 0.7rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 4px;
+        }
+
+        .card-number {
+            font-size: 1.8rem;
+            letter-spacing: 6px;
+            color: #f1f5f9;
+            font-weight: 300;
+            margin-top: 10px;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            margin-top: 45px;
+            gap: 15px;
+        }
+
+        .data-item .label {
+            font-size: 0.6rem;
+            color: #475569;
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .data-item .value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* --- UTILS --- */
+        .glow { color: var(--accent); text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+
     </style>
 </head>
 <body>
 
-    <div class="console">
-        <h3 style="margin-top: 0; font-weight: 400; color: #94a3b8;">Monitor de Diagnóstico</h3>
-        <input type="number" id="binInput" placeholder="457101" oninput="diagnosticar()">
-        
-        <div id="status-text" style="font-size: 0.75rem; color: #6366f1;">Esperando 6 dígitos...</div>
+    <div class="main-wrapper">
+        <section class="search-section">
+            <h1>SISTEMA DE VERIFICACIÓN</h1>
+            <div class="input-group">
+                <input type="number" id="binInput" maxlength="6" placeholder="000000" oninput="processDiscovery()">
+            </div>
+            <div id="status-bar">LISTO PARA ESCANEAR</div>
+        </section>
 
-        <div id="errorBox" class="error-log"></div>
-
-        <div id="successBox" class="success-card">
-            <span class="label">Banco</span> <div id="r-bank"></div>
-            <span class="label">País / Marca</span> <div id="r-meta"></div>
-        </div>
+        <section class="card-container">
+            <div class="credit-card" id="mainCard">
+                <div class="bank-info">
+                    <div id="display-bank">BANCO PRIVADO</div>
+                    <div id="display-country">DESCONOCIDO</div>
+                </div>
+                <div class="chip"></div>
+                <div class="card-number" id="display-num">0000 00XX XXXX</div>
+                
+                <div class="data-grid">
+                    <div class="data-item">
+                        <span class="label">Marca</span>
+                        <span class="value" id="display-brand">N/A</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Tipo</span>
+                        <span class="value" id="display-type">N/A</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Nivel</span>
+                        <span class="value" id="display-level">N/A</span>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 
-<script>
-    async function diagnosticar() {
-        const bin = document.getElementById('binInput').value;
-        const errorBox = document.getElementById('errorBox');
-        const successBox = document.getElementById('successBox');
-        const statusText = document.getElementById('status-text');
+    <script>
+        // MEMORIA LOCAL: Evita consultas repetidas a la red
+        const localMemory = {};
 
-        // Resetear vista
-        errorBox.style.display = "none";
-        successBox.style.display = "none";
+        async function processDiscovery() {
+            const val = document.getElementById('binInput').value;
+            const card = document.getElementById('mainCard');
+            const status = document.getElementById('status-bar');
 
-        if (bin.length === 6) {
-            statusText.innerText = "Iniciando peticion HTTP...";
-            
-            try {
-                const response = await fetch(`https://data.handyapi.com/bin/${bin}`);
+            if (val.length === 6) {
+                const bin = val.substring(0, 6);
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: El servidor de la API rechazó la conexión.`);
+                // 1. Verificar Memoria
+                if (localMemory[bin]) {
+                    status.innerHTML = "RECUPERADO DE MEMORIA <span class='glow'>✓</span>";
+                    renderData(localMemory[bin], bin);
+                    return;
                 }
 
-                const data = await response.json();
+                status.innerText = "CONECTANDO CON SERVIDORES...";
+                card.classList.remove('show');
 
-                if (data.Status === "SUCCESS") {
-                    document.getElementById('r-bank').innerText = data.Bank || "BANCO DESCONOCIDO";
-                    document.getElementById('r-meta').innerText = `${data.Country?.Name || 'N/A'} - ${data.Scheme || 'N/A'}`;
-                    successBox.style.display = "block";
-                    statusText.innerText = "✓ Conexión establecida y datos recibidos.";
-                } else {
-                    errorBox.className = "error-log err-warn";
-                    errorBox.innerText = "PROBLEMA: La API funciona, pero ese BIN no existe en su base de datos.";
-                    errorBox.style.display = "block";
-                }
+                try {
+                    // 2. INTENTO A: HandyAPI (Directa)
+                    let response = await fetch(`https://data.handyapi.com/bin/${bin}`);
+                    let data = await response.json();
 
-            } catch (err) {
-                errorBox.className = "error-log err-critical";
-                
-                // DETECCIÓN DE PROBLEMAS ESPECÍFICOS
-                if (err.message.includes('Failed to fetch')) {
-                    errorBox.innerText = "PROBLEMA: Error de CORS o Red. Tu navegador bloqueó la salida de datos a la API. (Prueba desactivando extensiones o usando modo incógnito).";
-                } else {
-                    errorBox.innerText = "PROBLEMA: " + err.message;
+                    if (data.Status === "SUCCESS" && data.Bank) {
+                        const cleanData = {
+                            bank: data.Bank,
+                            country: data.Country?.Name || "GLOBAL",
+                            brand: data.Scheme,
+                            type: data.Type,
+                            level: data.Brand || "STANDARD"
+                        };
+                        saveAndRender(cleanData, bin);
+                    } else {
+                        // 3. INTENTO B: Binlist con Rescate (Proxy)
+                        status.innerText = "FUENTE A VACÍA. INICIANDO RESCATE...";
+                        const proxy = "https://api.allorigins.win/get?url=";
+                        const target = `https://lookup.binlist.net/${bin}`;
+                        
+                        const res2 = await fetch(proxy + encodeURIComponent(target));
+                        const wrapper = await res2.json();
+                        const d2 = JSON.parse(wrapper.contents);
+
+                        if (d2) {
+                            const cleanData = {
+                                bank: d2.bank?.name || "BANCO NO ESPECIFICADO",
+                                country: d2.country?.name || "INTERNACIONAL",
+                                brand: d2.scheme || "CARD",
+                                type: d2.type || "N/A",
+                                level: d2.brand || "PREMIUM"
+                            };
+                            saveAndRender(cleanData, bin);
+                        } else {
+                            throw new Error("Sin datos");
+                        }
+                    }
+                } catch (err) {
+                    status.innerHTML = "<span style='color:#f87171'>ERROR: BASES DE DATOS SATURADAS</span>";
+                    console.error("Error en flujo:", err);
                 }
-                
-                errorBox.style.display = "block";
-                statusText.innerText = "✖ Fallo en la comunicación.";
+            } else {
+                card.classList.remove('show');
+                status.innerText = val.length > 0 ? `ESPERANDO ${6 - val.length} DÍGITOS...` : "LISTO PARA ESCANEAR";
             }
-        } else {
-            statusText.innerText = `Faltan ${6 - bin.length} números...`;
         }
-    }
-</script>
 
+        function saveAndRender(data, bin) {
+            localMemory[bin] = data; // Guardar para no volver a gastar internet
+            renderData(data, bin);
+            document.getElementById('status-bar').innerHTML = "DATOS ACTUALIZADOS <span class='glow'>✓</span>";
+        }
+
+        function renderData(d, bin) {
+            document.getElementById('display-bank').innerText = d.bank.toUpperCase();
+            document.getElementById('display-country').innerText = d.country;
+            document.getElementById('display-brand').innerText = d.brand.toUpperCase();
+            document.getElementById('display-type').innerText = d.type.toUpperCase();
+            document.getElementById('display-level').innerText = d.level.toUpperCase();
+            document.getElementById('display-num').innerText = bin.slice(0,4) + " " + bin.slice(4,6) + "XX XXXX";
+            
+            document.getElementById('mainCard').classList.add('show');
+        }
+    </script>
 </body>
 </html>
